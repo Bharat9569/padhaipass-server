@@ -15,7 +15,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://padhaipass.in",
   "https://www.padhaipass.in",
-  "https://padhaipass-client-v1.vercel.app/",  // add your vercel URL
+  "https://padhaipass-client-v1.vercel.app",  // add your vercel URL
 ];
 app.use(cors({
   origin: (origin, cb) => {
