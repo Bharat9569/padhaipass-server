@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+const mongoose         = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const TeacherSchema = new mongoose.Schema({
   user:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
@@ -19,6 +20,7 @@ const TeacherSchema = new mongoose.Schema({
   blocked:    { type: Boolean, default: false },
   ratings:    { type: [Number], default: [] },
   razorpay_payment_id: { type: String, default: "" },
+  profile_views: { type: Number, default: 0 },
 }, { timestamps: true });
 
 TeacherSchema.virtual("rating_avg").get(function() {
@@ -27,4 +29,6 @@ TeacherSchema.virtual("rating_avg").get(function() {
 });
 
 TeacherSchema.set("toJSON", { virtuals: true });
+TeacherSchema.plugin(mongoosePaginate);
+
 module.exports = mongoose.model("Teacher", TeacherSchema);

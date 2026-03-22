@@ -27,7 +27,7 @@ router.post("/create-order", protect, teacherOnly, async (req, res) => {
       amount:   order.amount,
     });
   } catch (err) {
-    console.error("❌ create-order error:", err.message);
+    
     res.status(500).json({ message: err.message });
   }
 });
@@ -78,11 +78,11 @@ router.post("/verify", protect, teacherOnly, async (req, res) => {
       { new: true }
     );
 
-    console.log("✅ Payment verified and teacher activated:", teacher?.name);
+    
     res.json({ verified: true, teacher });
 
   } catch (err) {
-    console.error("❌ verify error:", err.message);
+    
     res.status(500).json({ message: err.message });
   }
 });

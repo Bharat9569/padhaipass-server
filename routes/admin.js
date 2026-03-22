@@ -2,6 +2,7 @@ const express = require("express");
 const Teacher = require("../models/Teacher");
 const User    = require("../models/User");
 const Payment = require("../models/Payment");
+const Review  = require("../models/Review");
 const { protect, adminOnly } = require("../middleware/auth");
 const router  = express.Router();
 
@@ -15,7 +16,7 @@ router.get("/teachers", protect, adminOnly, async (req, res) => {
   }
 });
 
-// GET /api/admin/payments  ← NEW
+// GET /api/admin/payments
 router.get("/payments", protect, adminOnly, async (req, res) => {
   try {
     const payments = await Payment.find()
@@ -31,12 +32,14 @@ router.get("/payments", protect, adminOnly, async (req, res) => {
 // GET /api/admin/stats
 router.get("/stats", protect, adminOnly, async (req, res) => {
   try {
-    const [totalTeachers, paidTeachers, blockedTeachers, totalStudents, unpaidTeachers] = await Promise.all([
+    const [totalTeachers, paidTeachers, blockedTeachers, totalStudents, unpaidTeachers, totalViews, pendingReviews] = await Promise.all([
       Teacher.countDocuments(),
       Teacher.countDocuments({ paid: true }),
       Teacher.countDocuments({ blocked: true }),
       User.countDocuments({ role: "student" }),
       Teacher.countDocuments({ paid: false }),
+      Teacher.aggregate([{ $group: { _id: null, total: { $sum: "$profile_views" } } }]),
+      Review.countDocuments({ status: "pending" }),
     ]);
     res.json({
       totalTeachers,
@@ -44,7 +47,9 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       blockedTeachers,
       totalStudents,
       unpaidTeachers,
-      revenue: paidTeachers * 499
+      revenue: paidTeachers * 499,
+      totalProfileViews: totalViews[0]?.total || 0,
+      pendingReviews,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
