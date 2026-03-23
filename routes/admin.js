@@ -3,6 +3,7 @@ const Teacher = require("../models/Teacher");
 const User    = require("../models/User");
 const Payment = require("../models/Payment");
 const Review  = require("../models/Review");
+const Lead    = require("../models/Lead");
 const { protect, adminOnly } = require("../middleware/auth");
 const router  = express.Router();
 
@@ -32,7 +33,17 @@ router.get("/payments", protect, adminOnly, async (req, res) => {
 // GET /api/admin/stats
 router.get("/stats", protect, adminOnly, async (req, res) => {
   try {
-    const [totalTeachers, paidTeachers, blockedTeachers, totalStudents, unpaidTeachers, totalViews, pendingReviews] = await Promise.all([
+    const [
+      totalTeachers,
+      paidTeachers,
+      blockedTeachers,
+      totalStudents,
+      unpaidTeachers,
+      totalViews,
+      pendingReviews,
+      totalLeads,
+      newLeads,
+    ] = await Promise.all([
       Teacher.countDocuments(),
       Teacher.countDocuments({ paid: true }),
       Teacher.countDocuments({ blocked: true }),
@@ -40,7 +51,10 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       Teacher.countDocuments({ paid: false }),
       Teacher.aggregate([{ $group: { _id: null, total: { $sum: "$profile_views" } } }]),
       Review.countDocuments({ status: "pending" }),
+      Lead.countDocuments(),
+      Lead.countDocuments({ status: "new" }),
     ]);
+
     res.json({
       totalTeachers,
       paidTeachers,
@@ -50,6 +64,8 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       revenue: paidTeachers * 499,
       totalProfileViews: totalViews[0]?.total || 0,
       pendingReviews,
+      totalLeads,
+      newLeads,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -78,6 +94,31 @@ router.patch("/teachers/:id/verify-payment", protect, adminOnly, async (req, res
       { new: true }
     );
     res.json({ paid: teacher.paid });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/admin/leads
+router.get("/leads", protect, adminOnly, async (req, res) => {
+  try {
+    const leads = await Lead.find().sort({ createdAt: -1 });
+    res.json(leads);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH /api/admin/leads/:id/status
+router.patch("/leads/:id/status", protect, adminOnly, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    res.json(lead);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -13,7 +13,7 @@ const app = express();
 // ── Security headers ──────────────────────────────────────
 app.use(helmet());
 
-// ── CORS — only allow your domain ────────────────────────
+// ── CORS ─────────────────────────────────────────────────
 const allowedOrigins = [
   "http://localhost:3000",
   "https://padhaipass.in",
@@ -34,21 +34,21 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static("uploads"));
 
 // ── Sanitization ──────────────────────────────────────────
-app.use(mongoSanitize());  // blocks MongoDB injection ($where, $gt etc.)
-app.use(xss());            // strips <script> tags from req.body & req.query
-app.use(hpp());            // prevents duplicate query param attacks
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
 
 // ── Rate limiting ─────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === "production" ? 200 : 1000,
   message: { message: "Too many requests, please try again later." }
 });
 app.use("/api/", limiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: process.env.NODE_ENV === "production" ? 20 : 100,
   message: { message: "Too many attempts, please try again later." }
 });
 app.use("/api/auth/", authLimiter);
@@ -58,6 +58,7 @@ app.use("/api/auth",     require("./routes/auth"));
 app.use("/api/teachers", require("./routes/teachers"));
 app.use("/api/payments", require("./routes/payments"));
 app.use("/api/admin",    require("./routes/admin"));
+app.use("/api/leads",    require("./routes/leads"));
 
 // ── Health check ──────────────────────────────────────────
 app.get("/", (req, res) => res.json({ status: "PadhaiPass API running" }));
@@ -71,14 +72,16 @@ app.use((err, req, res, next) => {
 // ── MongoDB + Start server ────────────────────────────────
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB connected");
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () =>
-      console.log(`🚀 HTTPS Server running at: http://localhost:${PORT}`)
-    );
+    const URL = `http://localhost:${PORT}`;
+
+    console.log("MongoDB connected");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running at: ${URL}`);
+    });
   })
-  .catch(err => { console.error("MongoDB error:", err.message); process.exit(1); });
-
-
-
-  
+  .catch(err => {
+    console.error("❌ MongoDB error:", err.message);
+    process.exit(1);
+  });

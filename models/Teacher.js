@@ -1,19 +1,26 @@
 const mongoose         = require("mongoose");
 const mongoosePaginate = require("mongoose-paginate-v2");
 
+const TeachingEntrySchema = new mongoose.Schema({
+  class:    { type: String, required: true },
+  subjects: { type: [String], default: ["All"] },
+}, { _id: false });
+
 const TeacherSchema = new mongoose.Schema({
   user:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
   name:       { type: String, required: true },
   email:      { type: String, required: true },
   phone:      { type: String, default: "" },
+  teaching:   { type: [TeachingEntrySchema], default: [] },
+  // kept for backward compatibility
   subjects:   { type: [String], default: [] },
+  classes:    { type: [String], default: [] },
   fees_min:   { type: Number, default: 0 },
   fees_max:   { type: Number, default: 0 },
   experience: { type: Number, default: 0 },
   bio:        { type: String, default: "" },
   city:       { type: String, default: "" },
   area:       { type: String, default: "" },
-  classes:    { type: String, default: "" },
   photo_url:  { type: String, default: "" },
   available:  { type: Boolean, default: true },
   paid:       { type: Boolean, default: false },
